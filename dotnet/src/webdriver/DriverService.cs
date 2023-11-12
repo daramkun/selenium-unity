@@ -22,8 +22,10 @@ using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using OpenQA.Selenium.Remote;
+using OpenQA.Selenium.Support.UI;
 
 namespace OpenQA.Selenium
 {
@@ -39,7 +41,7 @@ namespace OpenQA.Selenium
         private bool silent;
         private bool hideCommandPromptWindow;
         private bool isDisposed;
-        private Process driverServiceProcess;
+        private IProcess driverServiceProcess;
         private TimeSpan initializationTimeout = TimeSpan.FromSeconds(20);
 
         /// <summary>
@@ -262,23 +264,32 @@ namespace OpenQA.Selenium
                 return;
             }
 
-            this.driverServiceProcess = new Process();
+            ProcessStartInfo startInfo = new ProcessStartInfo();
 
             if (this.driverServicePath != null)
             {
-                this.driverServiceProcess.StartInfo.FileName = Path.Combine(this.driverServicePath, this.driverServiceExecutableName);
+                startInfo.FileName = Path.Combine(this.driverServicePath, this.driverServiceExecutableName);
             }
             else
             {
-                this.driverServiceProcess.StartInfo.FileName = DriverFinder.FullPath(this.GetDefaultDriverOptions());
+                startInfo.FileName = DriverFinder.FullPath(this.GetDefaultDriverOptions());
             }
 
-            this.driverServiceProcess.StartInfo.Arguments = this.CommandLineArguments;
-            this.driverServiceProcess.StartInfo.UseShellExecute = false;
-            this.driverServiceProcess.StartInfo.CreateNoWindow = this.hideCommandPromptWindow;
+            startInfo.Arguments = this.CommandLineArguments;
+            startInfo.UseShellExecute = false;
+            startInfo.CreateNoWindow = this.hideCommandPromptWindow;
 
-            DriverProcessStartingEventArgs eventArgs = new DriverProcessStartingEventArgs(this.driverServiceProcess.StartInfo);
+            DriverProcessStartingEventArgs eventArgs = new DriverProcessStartingEventArgs(startInfo);
             this.OnDriverProcessStarting(eventArgs);
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                this.driverServiceProcess = new Win32Process(startInfo);
+            }
+            else
+            {
+                this.driverServiceProcess = new ManagedProcess(startInfo);
+            }
 
             this.driverServiceProcess.Start();
             bool serviceAvailable = this.WaitForServiceInitialization();

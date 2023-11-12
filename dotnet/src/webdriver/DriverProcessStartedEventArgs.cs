@@ -19,6 +19,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using OpenQA.Selenium.Support.UI;
 
 namespace OpenQA.Selenium
 {
@@ -35,7 +36,7 @@ namespace OpenQA.Selenium
         /// Initializes a new instance of the <see cref="DriverProcessStartingEventArgs"/> class.
         /// </summary>
         /// <param name="driverProcess">The <see cref="Process"/> object started.</param>
-        public DriverProcessStartedEventArgs(Process driverProcess)
+        public DriverProcessStartedEventArgs(IProcess driverProcess)
         {
             this.processId = driverProcess.Id;
             if (driverProcess.StartInfo.RedirectStandardOutput && !driverProcess.StartInfo.UseShellExecute)
